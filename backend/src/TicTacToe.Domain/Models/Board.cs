@@ -42,4 +42,18 @@ public class Board
     {
         return _cells.All(cell => cell is not null);
     }
+    public Board Clone()
+{
+    var copy = new Board();
+
+    for (var i = 0; i < _cells.Length; i++)
+    {
+        if (_cells[i].HasValue)
+        {
+            copy.Place(i, _cells[i]!.Value);
+        }
+    }
+
+    return copy;
+}
 }
