@@ -62,9 +62,9 @@ public class Game
 
    _moveHistory.Add(
     new Move(
-        cellIndex,
-        player,
-        _moveHistory.Count + 1));
+        cellIndex: cellIndex,
+        player: player,
+        moveNumber: _moveHistory.Count + 1));
 
     EvaluateGame();
 
