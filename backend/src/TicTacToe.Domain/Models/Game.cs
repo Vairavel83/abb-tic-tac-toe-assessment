@@ -60,11 +60,11 @@ public class Game
 
     Board.Place(cellIndex, player);
 
-    _moveHistory.Add(
-        new Move(
-            _moveHistory.Count + 1,
-            player,
-            cellIndex));
+   _moveHistory.Add(
+    new Move(
+        cellIndex,
+        player,
+        _moveHistory.Count + 1));
 
     EvaluateGame();
 
@@ -89,5 +89,43 @@ private void SwitchPlayer()
         CurrentPlayer == Player.X
             ? Player.O
             : Player.X;
+}
+public void Reset()
+{
+    Board.Reset();
+
+    _moveHistory.Clear();
+
+    CurrentPlayer = Player.X;
+
+    Status = GameStatus.InProgress;
+
+    Winner = null;
+
+    WinningCells = Array.Empty<int>();
+}
+public void UndoLastMove()
+{
+    if (Status != GameStatus.InProgress)
+    {
+        throw new InvalidOperationException(
+            "Undo is not allowed after game completion.");
+    }
+
+    if (_moveHistory.Count == 0)
+    {
+        throw new InvalidOperationException(
+            "There are no moves to undo.");
+    }
+
+    var lastMove = _moveHistory[^1];
+
+    Board.Clear(lastMove.CellIndex);
+
+    _moveHistory.RemoveAt(_moveHistory.Count - 1);
+
+    CurrentPlayer = lastMove.Player;
+
+    EvaluateGame();
 }
 }
