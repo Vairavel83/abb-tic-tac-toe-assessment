@@ -2,6 +2,7 @@ using TicTacToe.Application.Interfaces;
 using TicTacToe.Application.Services;
 using TicTacToe.Domain.Enums;
 using TicTacToe.Domain.Models;
+using TicTacToe.Domain.Services;
 
 namespace TicTacToe.Application.Tests;
 
@@ -23,13 +24,25 @@ public class GameServiceTests
             return game;
         }
     }
+private sealed class FakeComputerMoveStrategy
+    : IComputerMoveStrategy
+{
+    public int CellToReturn { get; set; } = 4;
 
+    public int SelectMove(Board board)
+    {
+        return CellToReturn;
+    }
+}
     [Fact]
 public void CreateGame_ShouldCreateAndStoreGame()
 {
     // Arrange
     var repository = new FakeGameRepository();
-    var service = new GameService(repository);
+    var strategy = new FakeComputerMoveStrategy();
+
+var service =
+    new GameService(repository, strategy);
 
     // Act
     var game = service.CreateGame(GameMode.TwoPlayer);
@@ -50,7 +63,10 @@ public void GetGame_WhenGameExists_ShouldReturnGame()
 {
     // Arrange
     var repository = new FakeGameRepository();
-    var service = new GameService(repository);
+    var strategy = new FakeComputerMoveStrategy();
+
+var service =
+    new GameService(repository, strategy);
 
     var createdGame =
         service.CreateGame(GameMode.Computer);
@@ -67,7 +83,10 @@ public void GetGame_WhenGameDoesNotExist_ShouldThrowException()
 {
     // Arrange
     var repository = new FakeGameRepository();
-    var service = new GameService(repository);
+    var strategy = new FakeComputerMoveStrategy();
+
+var service =
+    new GameService(repository, strategy);
 
     var unknownGameId = Guid.NewGuid();
 
@@ -82,6 +101,119 @@ public void GetGame_WhenGameDoesNotExist_ShouldThrowException()
     Assert.Contains(
         unknownGameId.ToString(),
         exception.Message);
+}
+
+[Fact]
+public void MakeMove_ComputerMode_ShouldApplyHumanAndComputerMoves()
+{
+    // Arrange
+    var repository = new FakeGameRepository();
+
+    var strategy = new FakeComputerMoveStrategy
+    {
+        CellToReturn = 4
+    };
+
+    var service =
+        new GameService(repository, strategy);
+
+    var game =
+        service.CreateGame(GameMode.Computer);
+
+    // Act
+    var result =
+        service.MakeMove(
+            game.Id,
+            Player.X,
+            0);
+
+    // Assert
+    Assert.Equal(Player.X, result.Board.Cells[0]);
+    Assert.Equal(Player.O, result.Board.Cells[4]);
+
+    Assert.Equal(2, result.MoveHistory.Count);
+
+    Assert.Equal(Player.X, result.CurrentPlayer);
+}
+[Fact]
+public void MakeMove_WhenHumanWins_ShouldNotMakeComputerMove()
+{
+    // Arrange
+    var repository = new FakeGameRepository();
+
+    var strategy = new FakeComputerMoveStrategy
+    {
+        CellToReturn = 8
+    };
+
+    var service =
+        new GameService(repository, strategy);
+
+    var game =
+        service.CreateGame(GameMode.Computer);
+
+    /*
+       We prepare:
+
+       X | X | .
+       ---------
+       O | O | .
+       ---------
+       . | . | .
+
+       We use Game directly only for arranging the state.
+    */
+
+    game.MakeMove(Player.X, 0);
+    game.MakeMove(Player.O, 3);
+
+    game.MakeMove(Player.X, 1);
+    game.MakeMove(Player.O, 4);
+
+    // Act
+    service.MakeMove(
+        game.Id,
+        Player.X,
+        2);
+
+    // Assert
+    Assert.Equal(GameStatus.Won, game.Status);
+    Assert.Equal(Player.X, game.Winner);
+
+    Assert.Equal(5, game.MoveHistory.Count);
+
+    Assert.Null(game.Board.Cells[8]);
+}
+
+[Fact]
+public void MakeMove_ComputerMode_WhenHumanSubmitsO_ShouldRejectMove()
+{
+    // Arrange
+    var repository = new FakeGameRepository();
+    var strategy = new FakeComputerMoveStrategy();
+
+    var service =
+        new GameService(repository, strategy);
+
+    var game =
+        service.CreateGame(GameMode.Computer);
+
+    // Act
+    var action =
+        () => service.MakeMove(
+            game.Id,
+            Player.O,
+            0);
+
+    // Assert
+    var exception =
+        Assert.Throws<InvalidOperationException>(action);
+
+    Assert.Equal(
+        "In computer mode, the human player must be X.",
+        exception.Message);
+
+    Assert.Empty(game.MoveHistory);
 }
 
 }
