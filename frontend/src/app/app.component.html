@@ -1,20 +1,267 @@
-<h1>Tic Tac Toe</h1>
+<main class="page">
 
-<button
-  type="button"
-  (click)="createTestGame()">
-  Create Test Game
-</button>
+  <header class="header">
+    <div>
+      <h1>Tic Tac Toe</h1>
+      <p>Angular + ASP.NET Core</p>
+    </div>
+  </header>
 
-@if (game) {
-  <h2>Game created successfully</h2>
+  <section class="scoreboard">
 
-  <p>Game ID: {{ game.gameId }}</p>
-  <p>Mode: {{ game.mode }}</p>
-  <p>Current Player: {{ game.currentPlayer }}</p>
-  <p>Status: {{ game.status }}</p>
-}
+    <div class="score-card">
+      <span class="score-label">
+        X Wins
+      </span>
 
-@if (errorMessage) {
-  <p>{{ errorMessage }}</p>
-}
+      <strong>
+        {{ scoreboard.xWins }}
+      </strong>
+    </div>
+
+    <div class="score-card">
+      <span class="score-label">
+        O Wins
+      </span>
+
+      <strong>
+        {{ scoreboard.oWins }}
+      </strong>
+    </div>
+
+    <div class="score-card">
+      <span class="score-label">
+        Draws
+      </span>
+
+      <strong>
+        {{ scoreboard.draws }}
+      </strong>
+    </div>
+
+    <div class="scoreboard-actions">
+      <button
+        type="button"
+        (click)="resetScoreboard()"
+        [disabled]="isLoading">
+        Reset Scoreboard
+      </button>
+    </div>
+
+  </section>
+
+
+  <section class="mode-panel">
+
+    <h2>
+      Choose Game Mode
+    </h2>
+
+    <div class="mode-actions">
+
+      <button
+        type="button"
+        (click)="startGame('TwoPlayer')"
+        [disabled]="isLoading">
+        Two Players
+      </button>
+
+      <button
+        type="button"
+        (click)="startGame('Computer')"
+        [disabled]="isLoading">
+        Play Computer
+      </button>
+
+    </div>
+
+  </section>
+
+
+  @if (game) {
+
+    <section class="game-panel">
+
+      <div class="game-info">
+
+        <span class="mode-badge">
+          {{
+            game.mode === 'Computer'
+              ? 'Player vs Computer'
+              : 'Two Players'
+          }}
+        </span>
+
+
+        @if (game.status === 'InProgress') {
+
+          <h2>
+            Current Player:
+            <span class="player">
+              {{ game.currentPlayer }}
+            </span>
+          </h2>
+
+        }
+
+
+        @if (game.status === 'Won') {
+
+          <h2 class="result">
+            Player {{ game.winner }} wins!
+          </h2>
+
+        }
+
+
+        @if (game.status === 'Draw') {
+
+          <h2 class="result">
+            Game is a draw
+          </h2>
+
+        }
+
+      </div>
+
+
+      <div
+        class="board"
+        aria-label="Tic Tac Toe board">
+
+        @for (
+          cell of game.board;
+          track $index
+        ) {
+
+          <button
+            type="button"
+            class="cell"
+
+            [class.winning]="
+              game.winningCells.includes($index)
+            "
+
+            [disabled]="
+              isLoading ||
+              game.status !== 'InProgress' ||
+              cell !== null
+            "
+
+            (click)="playCell($index)"
+
+            [attr.aria-label]="
+              cell
+                ? 'Position ' + ($index + 1) +
+                  ' occupied by Player ' + cell
+                : 'Empty board position ' +
+                  ($index + 1)
+            ">
+
+            {{ cell }}
+
+          </button>
+
+        }
+
+      </div>
+
+
+      @if (isLoading) {
+
+        <p class="message">
+          Processing...
+        </p>
+
+      }
+
+
+      <div class="game-actions">
+
+        <button
+          type="button"
+          (click)="undo()"
+          [disabled]="
+            isLoading ||
+            game.moveHistory.length === 0 ||
+            game.status !== 'InProgress'
+          ">
+          Undo
+        </button>
+
+
+        <button
+          type="button"
+          (click)="resetGame()"
+          [disabled]="isLoading">
+          Reset Game
+        </button>
+
+      </div>
+
+
+      <section class="history">
+
+        <h3>
+          Move History
+        </h3>
+
+
+        @if (game.moveHistory.length === 0) {
+
+          <p>
+            No moves yet.
+          </p>
+
+        } @else {
+
+          <div class="history-list">
+
+            @for (
+              move of game.moveHistory;
+              track move.moveNumber
+            ) {
+
+              <div class="history-item">
+
+                <strong>
+                  #{{ move.moveNumber }}
+                </strong>
+
+                <span>
+                  Player {{ move.player }}
+                </span>
+
+                <span>
+                  Row {{ move.row }},
+                  Column {{ move.column }}
+                </span>
+
+              </div>
+
+            }
+
+          </div>
+
+        }
+
+      </section>
+
+    </section>
+
+  }
+
+
+  @if (errorMessage) {
+
+    <div
+      class="error"
+      role="alert">
+
+      {{ errorMessage }}
+
+    </div>
+
+  }
+
+</main>
