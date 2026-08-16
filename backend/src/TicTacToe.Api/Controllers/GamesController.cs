@@ -32,96 +32,41 @@ public class GamesController : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
-    public ActionResult<GameStateResponse> GetGame(Guid id)
-    {
-        try
-        {
-            var game = _gameService.GetGame(id);
+public ActionResult<GameStateResponse> GetGame(Guid id)
+{
+    var game = _gameService.GetGame(id);
 
-            return Ok(
-                GameResponseMapper.ToResponse(game));
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(new ProblemDetails
-            {
-                Title = "Game not found",
-                Detail = ex.Message,
-                Status = StatusCodes.Status404NotFound
-            });
-        }
-    }
-    [HttpPost("{id:guid}/moves")]
+    return Ok(
+        GameResponseMapper.ToResponse(game));
+}
+ [HttpPost("{id:guid}/moves")]
 public ActionResult<GameStateResponse> MakeMove(
     Guid id,
     MoveRequest request)
 {
-    try
-    {
-        var game = _gameService.MakeMove(
-            id,
-            request.Player,
-            request.Position);
+    var game = _gameService.MakeMove(
+        id,
+        request.Player,
+        request.Position);
 
-        return Ok(
-            GameResponseMapper.ToResponse(game));
-    }
-    catch (KeyNotFoundException ex)
-    {
-        return NotFound(new ProblemDetails
-        {
-            Title = "Game not found",
-            Detail = ex.Message,
-            Status = StatusCodes.Status404NotFound
-        });
-    }
-    catch (ArgumentOutOfRangeException ex)
-    {
-        return BadRequest(new ProblemDetails
-        {
-            Title = "Invalid board position",
-            Detail = ex.Message,
-            Status = StatusCodes.Status400BadRequest
-        });
-    }
-    catch (InvalidOperationException ex)
-    {
-        return BadRequest(new ProblemDetails
-        {
-            Title = "Invalid move",
-            Detail = ex.Message,
-            Status = StatusCodes.Status400BadRequest
-        });
-    }
+    return Ok(
+        GameResponseMapper.ToResponse(game));
 }
-
 [HttpPost("{id:guid}/undo")]
 public ActionResult<GameStateResponse> Undo(Guid id)
 {
-    try
-    {
-        var game = _gameService.Undo(id);
+    var game = _gameService.Undo(id);
 
-        return Ok(
-            GameResponseMapper.ToResponse(game));
-    }
-    catch (KeyNotFoundException ex)
-    {
-        return NotFound(new ProblemDetails
-        {
-            Title = "Game not found",
-            Detail = ex.Message,
-            Status = StatusCodes.Status404NotFound
-        });
-    }
-    catch (InvalidOperationException ex)
-    {
-        return BadRequest(new ProblemDetails
-        {
-            Title = "Unable to undo",
-            Detail = ex.Message,
-            Status = StatusCodes.Status400BadRequest
-        });
-    }
+    return Ok(
+        GameResponseMapper.ToResponse(game));
 }
+[HttpPost("{id:guid}/reset")]
+public ActionResult<GameStateResponse> Reset(Guid id)
+{
+    var game = _gameService.ResetGame(id);
+
+    return Ok(
+        GameResponseMapper.ToResponse(game));
+}
+
 }

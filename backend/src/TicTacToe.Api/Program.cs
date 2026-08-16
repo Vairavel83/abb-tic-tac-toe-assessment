@@ -3,6 +3,7 @@ using TicTacToe.Application.Interfaces;
 using TicTacToe.Application.Services;
 using TicTacToe.Domain.Services;
 using TicTacToe.Infrastructure.Repositories;
+using TicTacToe.Api.ExceptionHandling;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,6 +16,9 @@ builder.Services
             new JsonStringEnumConverter());
     });
 
+builder.Services.AddProblemDetails();
+
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 // Native ASP.NET Core OpenAPI
 builder.Services.AddOpenApi();
 
@@ -37,7 +41,7 @@ builder.Services.AddScoped<GameService>();
 builder.Services.AddScoped<ScoreboardService>();
 
 var app = builder.Build();
-
+app.UseExceptionHandler();
 // Expose OpenAPI only during development
 if (app.Environment.IsDevelopment())
 {
