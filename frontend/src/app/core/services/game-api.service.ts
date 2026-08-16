@@ -2,6 +2,8 @@ import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
+import { API_CONFIG } from '../config/api.config';
+
 import {
   CreateGameRequest,
   GameMode,
@@ -18,7 +20,7 @@ import { Scoreboard } from '../models/scoreboard.model';
 export class GameApiService {
   private readonly http = inject(HttpClient);
 
-  private readonly baseUrl = 'http://localhost:5165/api';
+  private readonly baseUrl =  API_CONFIG.baseUrl;
 
   createGame(mode: GameMode): Observable<GameState> {
     const request: CreateGameRequest = {
