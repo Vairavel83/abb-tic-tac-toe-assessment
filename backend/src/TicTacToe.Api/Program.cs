@@ -40,6 +40,17 @@ builder.Services.AddSingleton<
 builder.Services.AddScoped<GameService>();
 builder.Services.AddScoped<ScoreboardService>();
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AngularFrontend", policy =>
+    {
+        policy
+            .WithOrigins("http://localhost:4200")
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
+
 var app = builder.Build();
 app.UseExceptionHandler();
 // Expose OpenAPI only during development
@@ -49,6 +60,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseCors("AngularFrontend");
 
 app.MapControllers();
 
