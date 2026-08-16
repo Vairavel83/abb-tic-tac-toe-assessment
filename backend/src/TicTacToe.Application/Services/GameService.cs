@@ -53,6 +53,28 @@ public class GameService
 
     return game;
 }
+public Game Undo(Guid gameId)
+{
+    var game = GetGame(gameId);
+
+    if (game.Mode == GameMode.TwoPlayer)
+    {
+        game.UndoLastMove();
+        return game;
+    }
+
+    // Computer mode:
+    // remove computer O move first
+    game.UndoLastMove();
+
+    // remove previous human X move
+    if (game.MoveHistory.Count > 0)
+    {
+        game.UndoLastMove();
+    }
+
+    return game;
+}
     
 
     public Game CreateGame(GameMode mode)

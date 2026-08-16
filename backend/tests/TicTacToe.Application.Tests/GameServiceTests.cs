@@ -216,4 +216,44 @@ public void MakeMove_ComputerMode_WhenHumanSubmitsO_ShouldRejectMove()
     Assert.Empty(game.MoveHistory);
 }
 
+[Fact]
+public void Undo_ComputerMode_ShouldRemoveHumanAndComputerMoves()
+{
+    // Arrange
+    var repository = new FakeGameRepository();
+
+    var strategy = new FakeComputerMoveStrategy
+    {
+        CellToReturn = 4
+    };
+
+    var service =
+        new GameService(repository, strategy);
+
+    var game =
+        service.CreateGame(GameMode.Computer);
+
+    service.MakeMove(
+        game.Id,
+        Player.X,
+        0);
+
+    // Before undo:
+    // X at 0
+    // O at 4
+    Assert.Equal(2, game.MoveHistory.Count);
+
+    // Act
+    service.Undo(game.Id);
+
+    // Assert
+    Assert.Null(game.Board.Cells[0]);
+    Assert.Null(game.Board.Cells[4]);
+
+    Assert.Empty(game.MoveHistory);
+
+    Assert.Equal(Player.X, game.CurrentPlayer);
+    Assert.Equal(GameStatus.InProgress, game.Status);
+}
+
 }
