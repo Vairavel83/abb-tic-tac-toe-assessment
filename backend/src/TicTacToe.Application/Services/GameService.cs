@@ -10,11 +10,16 @@ public class GameService
     private readonly IGameRepository _gameRepository;
     private readonly IComputerMoveStrategy _computerMoveStrategy;
 
-    public GameService(IGameRepository gameRepository, IComputerMoveStrategy computerMoveStrategy)
-    {
-        _gameRepository = gameRepository;
-        _computerMoveStrategy = computerMoveStrategy;
-    }
+private readonly IScoreboardRepository _scoreboardRepository;
+    public GameService(
+    IGameRepository gameRepository,
+    IComputerMoveStrategy computerMoveStrategy,
+    IScoreboardRepository scoreboardRepository)
+{
+    _gameRepository = gameRepository;
+    _computerMoveStrategy = computerMoveStrategy;
+    _scoreboardRepository = scoreboardRepository;
+}
     public Game MakeMove(
     Guid gameId,
     Player player,
@@ -25,6 +30,7 @@ public class GameService
     if (game.Mode == GameMode.TwoPlayer)
     {
         game.MakeMove(player, cellIndex);
+        RecordScoreIfCompleted(game);
 
         return game;
     }
@@ -42,6 +48,7 @@ public class GameService
     // the human move already completed the game.
     if (game.Status != GameStatus.InProgress)
     {
+        RecordScoreIfCompleted(game);
         return game;
     }
 
@@ -50,6 +57,7 @@ public class GameService
         _computerMoveStrategy.SelectMove(game.Board);
 
     game.MakeMove(Player.O, computerCell);
+    RecordScoreIfCompleted(game);
 
     return game;
 }
@@ -96,4 +104,34 @@ public Game Undo(Guid gameId)
 
         return game;
     }
+
+    private void RecordScoreIfCompleted(Game game)
+{
+    if (game.Status == GameStatus.InProgress ||
+        game.ScoreRecorded)
+    {
+        return;
+    }
+
+    if (game.Status == GameStatus.Won &&
+        game.Winner.HasValue)
+    {
+        _scoreboardRepository.RecordWin(
+            game.Winner.Value);
+    }
+    else if (game.Status == GameStatus.Draw)
+    {
+        _scoreboardRepository.RecordDraw();
+    }
+
+    game.MarkScoreRecorded();
+}
+public Game ResetGame(Guid gameId)
+{
+    var game = GetGame(gameId);
+
+    game.Reset();
+
+    return game;
+}
 }

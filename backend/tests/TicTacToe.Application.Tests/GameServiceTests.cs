@@ -34,6 +34,33 @@ private sealed class FakeComputerMoveStrategy
         return CellToReturn;
     }
 }
+private sealed class FakeScoreboardRepository
+    : IScoreboardRepository
+{
+    private readonly Scoreboard _scoreboard = new();
+
+    public Scoreboard Get()
+    {
+        return _scoreboard;
+    }
+
+    public void RecordWin(Player winner)
+    {
+        _scoreboard.RecordWin(winner);
+    }
+
+    public void RecordDraw()
+    {
+        _scoreboard.RecordDraw();
+    }
+
+    public Scoreboard Reset()
+    {
+        _scoreboard.Reset();
+
+        return _scoreboard;
+    }
+}
     [Fact]
 public void CreateGame_ShouldCreateAndStoreGame()
 {
@@ -41,8 +68,14 @@ public void CreateGame_ShouldCreateAndStoreGame()
     var repository = new FakeGameRepository();
     var strategy = new FakeComputerMoveStrategy();
 
+var scoreboardRepository =
+    new FakeScoreboardRepository();
+
 var service =
-    new GameService(repository, strategy);
+    new GameService(
+        repository,
+        strategy,
+        scoreboardRepository);
 
     // Act
     var game = service.CreateGame(GameMode.TwoPlayer);
@@ -65,8 +98,14 @@ public void GetGame_WhenGameExists_ShouldReturnGame()
     var repository = new FakeGameRepository();
     var strategy = new FakeComputerMoveStrategy();
 
+var scoreboardRepository =
+    new FakeScoreboardRepository();
+
 var service =
-    new GameService(repository, strategy);
+    new GameService(
+        repository,
+        strategy,
+        scoreboardRepository);
 
     var createdGame =
         service.CreateGame(GameMode.Computer);
@@ -85,8 +124,14 @@ public void GetGame_WhenGameDoesNotExist_ShouldThrowException()
     var repository = new FakeGameRepository();
     var strategy = new FakeComputerMoveStrategy();
 
+var scoreboardRepository =
+    new FakeScoreboardRepository();
+
 var service =
-    new GameService(repository, strategy);
+    new GameService(
+        repository,
+        strategy,
+        scoreboardRepository);
 
     var unknownGameId = Guid.NewGuid();
 
@@ -114,8 +159,14 @@ public void MakeMove_ComputerMode_ShouldApplyHumanAndComputerMoves()
         CellToReturn = 4
     };
 
-    var service =
-        new GameService(repository, strategy);
+    var scoreboardRepository =
+    new FakeScoreboardRepository();
+
+var service =
+    new GameService(
+        repository,
+        strategy,
+        scoreboardRepository);
 
     var game =
         service.CreateGame(GameMode.Computer);
@@ -146,8 +197,14 @@ public void MakeMove_WhenHumanWins_ShouldNotMakeComputerMove()
         CellToReturn = 8
     };
 
-    var service =
-        new GameService(repository, strategy);
+   var scoreboardRepository =
+    new FakeScoreboardRepository();
+
+var service =
+    new GameService(
+        repository,
+        strategy,
+        scoreboardRepository);
 
     var game =
         service.CreateGame(GameMode.Computer);
@@ -192,8 +249,14 @@ public void MakeMove_ComputerMode_WhenHumanSubmitsO_ShouldRejectMove()
     var repository = new FakeGameRepository();
     var strategy = new FakeComputerMoveStrategy();
 
-    var service =
-        new GameService(repository, strategy);
+    var scoreboardRepository =
+    new FakeScoreboardRepository();
+
+var service =
+    new GameService(
+        repository,
+        strategy,
+        scoreboardRepository);
 
     var game =
         service.CreateGame(GameMode.Computer);
@@ -227,8 +290,14 @@ public void Undo_ComputerMode_ShouldRemoveHumanAndComputerMoves()
         CellToReturn = 4
     };
 
-    var service =
-        new GameService(repository, strategy);
+   var scoreboardRepository =
+    new FakeScoreboardRepository();
+
+var service =
+    new GameService(
+        repository,
+        strategy,
+        scoreboardRepository);
 
     var game =
         service.CreateGame(GameMode.Computer);
@@ -254,6 +323,140 @@ public void Undo_ComputerMode_ShouldRemoveHumanAndComputerMoves()
 
     Assert.Equal(Player.X, game.CurrentPlayer);
     Assert.Equal(GameStatus.InProgress, game.Status);
+}
+[Fact]
+public void MakeMove_WhenXWins_ShouldIncrementXWins()
+{
+    // Arrange
+    var repository = new FakeGameRepository();
+    var strategy = new FakeComputerMoveStrategy();
+    var scoreboardRepository = new FakeScoreboardRepository();
+
+    var service = new GameService(
+        repository,
+        strategy,
+        scoreboardRepository);
+
+    var game = service.CreateGame(GameMode.TwoPlayer);
+
+    // Act
+    service.MakeMove(game.Id, Player.X, 0);
+    service.MakeMove(game.Id, Player.O, 3);
+
+    service.MakeMove(game.Id, Player.X, 1);
+    service.MakeMove(game.Id, Player.O, 4);
+
+    service.MakeMove(game.Id, Player.X, 2);
+
+    // Assert
+    var scoreboard = scoreboardRepository.Get();
+
+    Assert.Equal(GameStatus.Won, game.Status);
+    Assert.Equal(Player.X, game.Winner);
+
+    Assert.Equal(1, scoreboard.XWins);
+    Assert.Equal(0, scoreboard.OWins);
+    Assert.Equal(0, scoreboard.Draws);
+
+    Assert.True(game.ScoreRecorded);
+}
+[Fact]
+public void MakeMove_AfterGameAlreadyCompleted_ShouldNotIncrementScoreAgain()
+{
+    // Arrange
+    var repository = new FakeGameRepository();
+    var strategy = new FakeComputerMoveStrategy();
+    var scoreboardRepository = new FakeScoreboardRepository();
+
+    var service = new GameService(
+        repository,
+        strategy,
+        scoreboardRepository);
+
+    var game = service.CreateGame(GameMode.TwoPlayer);
+
+    // X wins
+    service.MakeMove(game.Id, Player.X, 0);
+    service.MakeMove(game.Id, Player.O, 3);
+
+    service.MakeMove(game.Id, Player.X, 1);
+    service.MakeMove(game.Id, Player.O, 4);
+
+    service.MakeMove(game.Id, Player.X, 2);
+
+    Assert.Equal(1, scoreboardRepository.Get().XWins);
+
+    // Act
+    var action = () =>
+        service.MakeMove(game.Id, Player.O, 5);
+
+    // Assert
+    Assert.Throws<InvalidOperationException>(action);
+
+    Assert.Equal(1, scoreboardRepository.Get().XWins);
+    Assert.True(game.ScoreRecorded);
+}
+[Fact]
+public void ResetGame_ShouldClearGameButKeepScoreboard()
+{
+    // Arrange
+    var repository = new FakeGameRepository();
+    var strategy = new FakeComputerMoveStrategy();
+    var scoreboardRepository = new FakeScoreboardRepository();
+
+    var service = new GameService(
+        repository,
+        strategy,
+        scoreboardRepository);
+
+    var game = service.CreateGame(GameMode.TwoPlayer);
+
+    // Complete first round - X wins
+    service.MakeMove(game.Id, Player.X, 0);
+    service.MakeMove(game.Id, Player.O, 3);
+
+    service.MakeMove(game.Id, Player.X, 1);
+    service.MakeMove(game.Id, Player.O, 4);
+
+    service.MakeMove(game.Id, Player.X, 2);
+
+    Assert.Equal(1, scoreboardRepository.Get().XWins);
+    Assert.True(game.ScoreRecorded);
+
+    // Act
+    service.ResetGame(game.Id);
+
+    // Assert - game reset
+    Assert.All(
+        game.Board.Cells,
+        cell => Assert.Null(cell));
+
+    Assert.Empty(game.MoveHistory);
+
+    Assert.Equal(Player.X, game.CurrentPlayer);
+    Assert.Equal(GameStatus.InProgress, game.Status);
+
+    Assert.Null(game.Winner);
+    Assert.Empty(game.WinningCells);
+
+    Assert.False(game.ScoreRecorded);
+
+    // Scoreboard must remain unchanged
+    Assert.Equal(1, scoreboardRepository.Get().XWins);
+    Assert.Equal(0, scoreboardRepository.Get().OWins);
+    Assert.Equal(0, scoreboardRepository.Get().Draws);
+    // Play another round after reset
+service.MakeMove(game.Id, Player.X, 0);
+service.MakeMove(game.Id, Player.O, 3);
+
+service.MakeMove(game.Id, Player.X, 1);
+service.MakeMove(game.Id, Player.O, 4);
+
+service.MakeMove(game.Id, Player.X, 2);
+
+// Same game resource, new completed round
+Assert.Equal(2, scoreboardRepository.Get().XWins);
+Assert.True(game.ScoreRecorded);
 }
 
 }

@@ -20,6 +20,7 @@ public class Game
     public GameStatus Status { get; private set; } = GameStatus.InProgress;
 
     public Player? Winner { get; private set; }
+    public bool ScoreRecorded { get; private set; }
 
     public IReadOnlyList<int> WinningCells { get; private set; }
         = Array.Empty<int>();
@@ -103,6 +104,7 @@ public void Reset()
     Winner = null;
 
     WinningCells = Array.Empty<int>();
+    ScoreRecorded = false;
 }
 public void UndoLastMove()
 {
@@ -127,5 +129,9 @@ public void UndoLastMove()
     CurrentPlayer = lastMove.Player;
 
     EvaluateGame();
+}
+public void MarkScoreRecorded()
+{
+    ScoreRecorded = true;
 }
 }
